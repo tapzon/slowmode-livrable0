@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Livrable 0 : Analyse SQL vs NoSQL</title>
+
+  <!-- Fonts (optional) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700;800&family=Source+Code+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #cfc6b8;
+      --ink: #2c241b;
+      --paper: #fdfbf7;
+      --paper-border: #d6cbb8;
+      --accent: #e85d04;
+      --accent-dark: #8c3802;
+      --muted: #6b5d52;
+      --shadow: rgba(0,0,0,0.2);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: "Source Serif 4", ui-serif, Georgia, serif;
+      background: var(--bg);
+      color: var(--ink);
+      padding: 10px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    ::selection{ background:#d4b483; color:#2c241b; }
+
+    .bg-texture{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      opacity:.10;
+      background-image: radial-gradient(#4a4036 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    .page{
+      max-width: 1024px;
+      margin: 0 auto;
+      background: var(--paper);
+      border: 1px solid var(--paper-border);
+      position: relative;
+      z-index: 2;
+      box-shadow:
+        10px 10px 20px var(--shadow),
+        inset 0 0 60px rgba(255,255,220,0.5);
+      overflow:hidden;
+    }
+
+    .page::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background-image: url('https://www.transparenttextures.com/patterns/cream-paper.png');
+      opacity: .50;
+      pointer-events:none;
+      z-index:0;
+    }
+
+    header{
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(253,251,247,0.95);
+      backdrop-filter: blur(6px);
+      border-bottom: 2px solid #bdafa0;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+
+    .header-inner{
+      position: relative;
+      z-index: 2;
+      padding: 24px 32px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 16px;
+      background-image: linear-gradient(transparent 95%, #e5e7eb 95%);
+      background-size: 100% 2rem;
+    }
+
+    .title-row{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      margin:0;
+    }
+
+    .logo-badge{
+      width: 40px;
+      height: 40px;
+      display:grid;
+      place-items:center;
+      background: var(--accent);
+      color: white;
+      border: 1px solid var(--accent-dark);
+      border-radius: 8px;
+      box-shadow: 2px 2px 0 var(--accent-dark);
+      flex: 0 0 auto;
+      font-weight: 800;
+      font-family: "Source Code Pro", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    h1{
+      margin:0;
+      font-size: 22px;
+      font-weight: 800;
+      color: #1a1410;
+      letter-spacing: -0.01em;
+      text-shadow: 1px 1px 0 #d4b483;
+    }
+
+    .underline-accent{
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-decoration-color: var(--accent);
+      text-underline-offset: 6px;
+    }
+
+    .subtitle{
+      margin: 10px 0 0;
+      font-family: "Source Code Pro", ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+
+    .dot{
+      width: 8px;
+      height: 8px;
+      border-radius:999px;
+      background: var(--muted);
+      display:inline-block;
+    }
+
+    .stamp{
+      display:none;
+      transform: rotate(-2deg);
+      border: 4px solid rgba(140,56,2,0.30);
+      padding: 8px 12px;
+      border-radius: 10px;
+      align-self:flex-start;
+      background: rgba(253,251,247,0.45);
+    }
+    .stamp .top{ font-family:"Source Code Pro", monospace; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color: rgba(140,56,2,0.60); font-weight:700; text-align:right; }
+    .stamp .date{ font-family:"Source Code Pro", monospace; font-size:18px; font-weight:800; color: rgba(140,56,2,0.80); text-align:right; margin-top:4px; }
+
+    main{
+      position: relative;
+      z-index: 2;
+      padding: 40px 32px;
+      display:flex;
+      flex-direction:column;
+      gap: 64px;
+    }
+
+    .hole{ position:absolute; left: 10px; width: 16px; height:16px; border-radius:999px; background:#5c5042; box-shadow: inset 1px 1px 3px rgba(0,0,0,0.6); z-index:3; }
+    .hole.h1{ top: 90px; }
+    .hole.h2{ top: 50%; transform: translateY(-50%); }
+    .hole.h3{ bottom: 90px; }
+
+    section{ position: relative; }
+
+    .section-title{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 800;
+      margin:0 0 18px;
+    }
+
+    .note{
+      background: #fff9e6;
+      border: 1px solid #e6dcc3;
+      padding: 28px;
+      box-shadow: 3px 3px 10px rgba(0,0,0,0.10);
+      transform: rotate(0.5deg);
+    }
+
+    .pin{
+      position:absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 16px;
+      height: 16px;
+      border-radius:999px;
+      background: #7f1d1d;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.30);
+      z-index: 5;
+    }
+
+    .note h2{
+      margin:0 0 18px;
+      padding-bottom: 10px;
+      border-bottom: 2px dotted #d4b483;
+      font-size: 18px;
+      font-weight: 800;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+
+    .badge-ok{
+      width: 28px;
+      height: 28px;
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      border: 1px solid #15803d;
+      background: #dcfce7;
+      color: #15803d;
+      font-weight: 900;
+    }
+
+    .note p{
+      margin: 0 0 20px;
+      color:#4a3e33;
+      line-height: 1.6;
+      font-weight: 600;
+      font-size: 18px;
+    }
+
+    .highlight{
+      background: #fef08a;
+      padding: 0 4px;
+      border-bottom: 1px solid #facc15;
+      font-weight: 900;
+      color: #000;
+      display:inline-block;
+      transform: skewX(-6deg);
+    }
+
+    .accent{ color: var(--accent); font-weight: 900; }
+
+    .pillars{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-top: 14px;
+    }
+
+    .card{
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-top: 4px solid #2563eb;
+      padding: 18px;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.10);
+      transition: transform .15s ease;
+      position: relative;
+    }
+    .card:hover{ transform: translateY(-3px); }
+
+    .card.t-yellow{ border-top-color:#ca8a04; }
+    .card.t-green{ border-top-color:#16a34a; }
+
+    .tape{
+      position:absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%) rotate(1deg);
+      width: 64px;
+      height: 24px;
+      background: rgba(255,255,255,0.50);
+      border-left: 1px solid rgba(255,255,255,0.80);
+      border-right: 1px solid rgba(255,255,255,0.80);
+      backdrop-filter: blur(3px);
+      opacity: .60;
+    }
+
+    .icon-bubble{
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 2px dashed #d1d5db;
+      background:#f9fafb;
+      display:grid;
+      place-items:center;
+      font-size: 18px;
+      color:#374151;
+      margin-bottom: 10px;
+    }
+
+    .card h4{ margin:0 0 8px; font-size: 18px; font-weight: 900; }
+    .card p{ margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; font-size: 13px; color:#5c5042; line-height: 1.5; }
+
+    .ledger-wrap{
+      background:#fff;
+      border: 2px solid #2c241b;
+      box-shadow: 0 0 0 1px #ccc, 0 4px 0 0 #bbb;
+      overflow:hidden;
+    }
+
+    table{ width:100%; border-collapse:collapse; }
+    thead th{
+      background:#e5e7eb;
+      color:#1f2937;
+      font-family:"Source Code Pro", monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      border-bottom: 4px solid #2c241b;
+      padding: 14px;
+      text-align:left;
+    }
+    thead th + th{ border-left: 1px solid #9ca3af; }
+    thead th.nosql{ background:#ffedd5; color:#9a3412; }
+
+    tbody td{
+      padding: 14px;
+      border-bottom: 1px solid #d1d5db;
+      font-size: 13px;
+      font-weight: 600;
+      color:#4b5563;
+      background-image: linear-gradient(transparent 95%, #e5e7eb 95%);
+      background-size: 100% 1.5rem;
+    }
+
+    tbody td + td{ border-left: 1px solid #d1d5db; }
+
+    tbody td.crit{ font-weight: 900; color:#374151; }
+    tbody td.sql{ background-color: #fef2f2; font-style: italic; }
+    tbody td.nosql{ background-color: #fff7ed; border-left: 1px solid #fed7aa; font-weight: 900; color:#1f2937; }
+
+    .two-col{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 28px;
+      align-items:start;
+    }
+
+    .reject{
+      background:#fef2f2;
+      border: 1px solid #fecaca;
+      padding: 18px;
+      color:#7f1d1d;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      transform: rotate(-1deg);
+      position: relative;
+    }
+
+    .tape-wide{
+      position:absolute;
+      top:-12px;
+      left:50%;
+      transform: translateX(-50%) rotate(2deg);
+      width: 96px;
+      height: 32px;
+      background: rgba(254,249,195,0.50);
+      border-left: 1px solid rgba(255,255,255,0.40);
+      border-right: 1px solid rgba(255,255,255,0.40);
+      backdrop-filter: blur(3px);
+    }
+
+    .reject p{ margin:0 0 12px; font-style: italic; }
+
+    .reject ul{
+      margin: 0;
+      padding: 14px 14px 14px 32px;
+      background:#fff;
+      border: 1px solid #fecaca;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+      font-family:"Source Code Pro", monospace;
+      color:#991b1b;
+      line-height: 1.7;
+    }
+
+    .stamp-reject{
+      display:inline-block;
+      margin-top: 14px;
+      padding: 8px 10px;
+      border: 2px solid #7f1d1d;
+      color:#7f1d1d;
+      font-weight: 900;
+      transform: rotate(2deg);
+    }
+
+    .crt{
+      background:#1a1a1a;
+      border-radius: 12px;
+      overflow:hidden;
+      border-top: 10px solid #333;
+      border-bottom: 10px solid #333;
+      box-shadow: 0 0 0 4px #444, 0 0 20px rgba(0,0,0,0.5);
+      position: relative;
+    }
+
+    .crt::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%),
+        linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06));
+      background-size: 100% 4px, 3px 100%;
+      pointer-events:none;
+      z-index: 3;
+    }
+
+    .crt-bar{
+      position: relative;
+      z-index: 4;
+      background:#333;
+      color:#aaa;
+      border-bottom: 1px solid #444;
+      padding: 10px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      font-family:"Source Code Pro", monospace;
+      font-size: 11px;
+    }
+
+    .pulse{ color:#22c55e; font-weight: 900; }
+    .blink{ display:inline-block; width: 10px; height:10px; border-radius:999px; background:#22c55e; margin-right:8px; box-shadow: 0 0 12px #22c55e; animation: pulse 1.2s infinite ease-in-out; }
+    @keyframes pulse{ 0%,100%{ transform: scale(.9); opacity:.6; } 50%{ transform: scale(1.15); opacity:1; } }
+
+    pre{
+      margin:0;
+      padding: 18px;
+      color:#4ade80;
+      font-family:"Source Code Pro", monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      overflow:auto;
+      position: relative;
+      z-index: 4;
+      text-shadow: 0 0 5px rgba(74,222,128,0.5);
+    }
+
+    .blueprint{
+      background:#eff6ff;
+      border: 4px double #bfdbfe;
+      padding: 28px;
+      position: relative;
+      overflow:hidden;
+    }
+
+    .blueprint::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      opacity:.10;
+      pointer-events:none;
+      background-image:
+        linear-gradient(#3b82f6 1px, transparent 1px),
+        linear-gradient(90deg, #3b82f6 1px, transparent 1px);
+      background-size: 20px 20px;
+      z-index:0;
+    }
+
+    .blue-inner{
+      position: relative;
+      z-index: 2;
+      display:flex;
+      flex-direction:column;
+      gap: 20px;
+    }
+
+    .path-card{
+      background:#fff;
+      border: 2px solid #1e40af;
+      box-shadow: 4px 4px 0 #93c5fd;
+      padding: 14px;
+      transform: rotate(-1deg);
+      font-size: 13px;
+    }
+
+    .path-card .label{
+      font-family:"Source Code Pro", monospace;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: .12em;
+      color:#64748b;
+      margin-bottom: 8px;
+    }
+
+    .path-card .path{
+      font-family:"Source Code Pro", monospace;
+      font-weight: 900;
+      color:#2563eb;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .live-col{
+      display:grid;
+      place-items:center;
+      gap: 12px;
+    }
+
+    .server-bubble{
+      width: 86px;
+      height: 86px;
+      border-radius: 999px;
+      border: 4px solid #93c5fd;
+      background:#fff;
+      display:grid;
+      place-items:center;
+      box-shadow: 0 10px 18px rgba(0,0,0,0.10);
+      font-size: 34px;
+      color:#60a5fa;
+    }
+
+    .line{
+      width: 4px;
+      height: 32px;
+      background:#93c5fd;
+    }
+
+    .live{
+      background:#1e1e1e;
+      border: 2px solid #4b5563;
+      border-radius: 8px;
+      padding: 10px 12px;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+    }
+
+    .live .txt{
+      font-family:"Source Code Pro", monospace;
+      color:#e5e7eb;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .08em;
+    }
+
+    .footer-verdict{
+      background:#2c241b;
+      color:#fdfbf7;
+      padding: 28px;
+      border-top: 8px solid var(--accent);
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.50);
+      display:flex;
+      flex-direction:column;
+      gap: 18px;
+      position: relative;
+    }
+
+    .paperclip{
+      position:absolute;
+      top:-28px;
+      right: 40px;
+      transform: rotate(12deg);
+      color:#9ca3af;
+      font-size: 44px;
+      user-select:none;
+    }
+
+    .footer-verdict h3{
+      margin:0;
+      font-size: 18px;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+
+    .footer-verdict p{
+      margin:0;
+      color:#d6cbb8;
+      font-size: 18px;
+      line-height: 1.6;
+    }
+
+    .gold-underline{ color:#fdba74; font-weight: 900; text-decoration: underline dotted; text-underline-offset: 6px; }
+
+    .validated{
+      align-self:flex-start;
+      border: 4px solid var(--accent);
+      padding: 14px 22px;
+      border-radius: 10px;
+      transform: rotate(-6deg);
+      background: rgba(232,93,4,0.10);
+      min-width: 220px;
+      text-align:center;
+      mask-image: url('https://www.transparenttextures.com/patterns/black-linen.png');
+      -webkit-mask-image: url('https://www.transparenttextures.com/patterns/black-linen.png');
+    }
+
+    .validated .small{
+      display:block;
+      font-family:"Source Code Pro", monospace;
+      text-transform: uppercase;
+      letter-spacing: .10em;
+      color:#fdba74;
+      font-size: 11px;
+      margin-bottom: 6px;
+    }
+
+    .validated .big{
+      display:block;
+      font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: .18em;
+      color: var(--accent);
+    }
+
+    footer{
+      padding: 22px 18px;
+      text-align:center;
+      color:#8c7e72;
+      font-size: 12px;
+      border-top: 1px solid var(--paper-border);
+      background:#f3efe6;
+      font-family:"Source Code Pro", monospace;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* responsive */
+    @media (min-width: 640px){
+      body{ padding: 24px; }
+      .stamp{ display:block; }
+      .pillars{ grid-template-columns: repeat(3, 1fr); }
+      .two-col{ grid-template-columns: 1fr 1fr; }
+      .blue-inner{ flex-direction: row; align-items:center; justify-content:space-between; gap: 28px; }
+      .live-col{ width: 34%; }
+      .footer-verdict{ flex-direction: row; align-items:center; justify-content:space-between; }
+      .validated{ align-self:center; }
+    }
+
+    /* tiny icon helper */
+    .i{ font-family: "Source Code Pro", monospace; font-weight: 900; }
+    .ok{ color:#22c55e; }
+    .warn{ color:#dc2626; }
+    .json{ color:#16a34a; }
+    .scale{ color:#1e40af; }
+    .msg{ color:#1e3a8a; }
+  </style>
+</head>
+
+<body>
+  <div class="bg-texture" aria-hidden="true"></div>
+
+  <div class="page">
+    <header>
+      <div class="header-inner">
+        <div>
+          <div class="title-row">
+            <div class="logo-badge" aria-hidden="true">⚖</div>
+            <h1><span class="underline-accent">Livrable 0 : Analyse SQL vs NoSQL</span></h1>
+          </div>
+          <p class="subtitle"><span class="dot"></span> SlowMode MVP • Data Architect</p>
+        </div>
+
+        <div class="stamp" aria-label="Date">
+          <div class="top">Reçu le</div>
+          <div class="date">14 JAN 2026</div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- HOLE PUNCHES -->
+      <div class="hole h1" aria-hidden="true"></div>
+      <div class="hole h2" aria-hidden="true"></div>
+      <div class="hole h3" aria-hidden="true"></div>
+
+      <!-- 1. SYNTHESE DECISION -->
+      <section class="note">
+        <div class="pin" aria-hidden="true"></div>
+        <h2>
+          <span class="badge-ok" aria-hidden="true">✓</span>
+          1. Synthèse de la décision
+        </h2>
+
+        <p>
+          Pour le développement du MVP de SlowMode, nous préconisons l'utilisation
+          <span class="highlight">exclusive</span>
+          d'une base de données NoSQL orientée documents (<span class="accent">Google Cloud Firestore</span>).
+          Ce choix est une réponse directe aux trois piliers fonctionnels du projet :
+        </p>
+
+        <div class="pillars">
+          <div class="card">
+            <div class="tape" aria-hidden="true"></div>
+            <div class="icon-bubble" aria-hidden="true">🧩</div>
+            <h4>Hétérogénéité</h4>
+            <p>Le “sur-mesure” implique des structures de données variables (mensurations, tissus) très lourdes à gérer en SQL.</p>
+          </div>
+
+          <div class="card t-yellow">
+            <div class="tape" aria-hidden="true"></div>
+            <div class="icon-bubble" aria-hidden="true">⚡</div>
+            <h4>Temps Réel</h4>
+            <p>La messagerie instantanée entre utilisateurs et artisans est le cœur de la conversion.</p>
+          </div>
+
+          <div class="card t-green">
+            <div class="tape" aria-hidden="true"></div>
+            <div class="icon-bubble" aria-hidden="true">⏱</div>
+            <h4>Time-to-Market</h4>
+            <p>L'approche Serverless élimine la gestion d'infrastructure (DevOps) pour se concentrer sur le produit.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. TABLEAU COMPARATIF -->
+      <section>
+        <h2 class="section-title"><span class="i scale" aria-hidden="true">⚖</span> 2. Analyse Comparative : Pourquoi le SQL échoue</h2>
+
+        <div class="ledger-wrap">
+          <div style="overflow:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:16%">Critère</th>
+                  <th style="width:25%">Approche SQL (Relationnel)</th>
+                  <th class="nosql" style="width:25%">Approche NoSQL (Firestore)</th>
+                  <th style="width:34%">Impact pour SlowMode</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="crit">Structure des données</td>
+                  <td class="sql">Schéma rigide. Toute modification demande une migration.</td>
+                  <td class="nosql">Schéma flexible (JSON). Champs dynamiques.</td>
+                  <td>Crucial : Une commande de “Robe” n'a pas les mêmes champs qu'une commande de “Rideaux”.</td>
+                </tr>
+                <tr>
+                  <td class="crit">Relations</td>
+                  <td class="sql">Jointures complexes (JOIN).</td>
+                  <td class="nosql">Dénormalisation. Donnée stockée “prête à lire”.</td>
+                  <td>Performance : Afficher le feed des créations est instantané sur mobile.</td>
+                </tr>
+                <tr>
+                  <td class="crit">Temps Réel</td>
+                  <td class="sql">Complexe (Socket.io, Polling requis).</td>
+                  <td class="nosql">Natif (onSnapshot). Sync auto.</td>
+                  <td>UX : Messagerie et suivi de commande “live” sans code complexe.</td>
+                </tr>
+                <tr>
+                  <td class="crit">Scalabilité</td>
+                  <td class="sql">Verticale (Coûteux).</td>
+                  <td class="nosql">Horizontale (Automatique).</td>
+                  <td>Coût : Plan gratuit suffisant au lancement vs Serveur SQL payant jour 1.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. PREUVE PAR L'EXEMPLE -->
+      <section class="two-col">
+        <div>
+          <h2 class="section-title"><span class="i warn" aria-hidden="true">⚠</span> 3. Contraintes de l’approche SQL (Option A)</h2>
+          <div class="reject">
+            <div class="tape-wide" aria-hidden="true"></div>
+            <p>"Note technique : La flexibilité des mensurations en SQL implique une modélisation plus complexe (ex. EAV) et plusieurs tables supplémentaires pour couvrir des cas variés."</p>
+            <ul>
+              <li>Table Commandes</li>
+              <li>Table Types_Vetements</li>
+              <li>Table Mensurations_Reference</li>
+              <li>Table Valeurs_Mensurations_Utilisateur</li>
+            </ul>
+            <div class="stamp-reject">⚠️ Option moins adaptée au MVP : complexité de mise en œuvre élevée</div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title"><span class="i json" aria-hidden="true">{ }</span> Approche NoSQL Firestore (Option B)</h2>
+          <p style="margin:0 0 10px; color:#4b5563; font-size:13px; font-style:italic;">La commande est un document unique. Voir capture terminal ci-dessous :</p>
+
+          <div class="crt">
+            <div class="crt-bar">
+              <span>bash ~ collection: orders / doc: order_xv987</span>
+              <span><span class="blink" aria-hidden="true"></span><span class="pulse">CONNECTED</span></span>
+            </div>
+            <pre>{
+  "status": "in_progress",
+  "created_at": "2026-01-05T16:30:00Z",
+
+  // Relations légères
+  "buyer": {
+    "uid": "user_123",
+    "display_name": "Sophie M."
+  },
+
+  // Point clé : prise en charge de structures variables (polymorphisme)
+  "specs": {
+    "type": "robe_soiree",
+    "measurements": {
+      "waist": 68,
+      "hips": 92,
+      "length_total": 140
+    },
+    "fabric_choice": {
+      "source": "marketplace_item",
+      "ref_id": "fabric_789",
+      "name": "Soie Sauvage Rouge"
+    }
+  },
+
+  "timeline": [
+    {"step": "offer_accepted", "done": true},
+    {"step": "fabric_received", "done": false}
+  ]
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. MESSAGERIE / ARCHI -->
+      <section class="blueprint">
+        <div class="blue-inner">
+          <div style="flex:1; min-width: 240px;">
+            <h2 class="section-title" style="color:#1e3a8a; text-transform:uppercase; letter-spacing:.08em;"><span class="i msg" aria-hidden="true">💬</span> 4. Architecture C2C</h2>
+            <p style="margin:0 0 12px; color:#1e40af; line-height:1.6;">
+              SlowMode est autant un réseau social qu'une boutique. En SQL, cela demanderait un serveur WebSocket.
+              Avec Firestore, le mobile <strong style="background:#bfdbfe; padding:0 4px; border:1px solid #60a5fa; color:#1e3a8a;">"écoute" (listener)</strong> la collection.
+            </p>
+
+            <div class="path-card">
+              <div class="label">Path Reference:</div>
+              <div class="path"><span aria-hidden="true">🗄</span> chats/{chat_id}/messages/{message_id}</div>
+            </div>
+          </div>
+
+          <div class="live-col">
+            <div class="server-bubble" aria-hidden="true">🖥</div>
+            <div class="line" aria-hidden="true"></div>
+            <div style="font-size:20px; color:#60a5fa;" aria-hidden="true">➜</div>
+            <div class="live">
+              <span class="blink" aria-hidden="true"></span>
+              <span class="txt">LIVE UPDATE</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. CONCLUSION -->
+      <section class="footer-verdict">
+        <div class="paperclip" aria-hidden="true">📎</div>
+
+        <div style="max-width: 680px;">
+          <h3><span class="i ok" aria-hidden="true">✓</span> Verdict Data Architect</h3>
+          <p>
+            L’utilisation de SQL serait moins adaptée au périmètre du MVP (risque de sur‑dimensionnement).
+            Nous validons l'architecture <span class="gold-underline">Firestore Native</span>.
+            Cela garantit une performance optimale pour le sur-mesure.
+          </p>
+        </div>
+
+        <div class="validated" aria-label="Statut">
+          <span class="small">Status du dossier</span>
+          <span class="big">VALIDÉ</span>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      &copy; 2026 SlowMode Project - CONFIDENTIAL - DO NOT DISTRIBUTE
+    </footer>
+  </div>
+</body>
+</html>
