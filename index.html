@@ -45,6 +45,63 @@
       background-size: 20px 20px;
     }
 
+    /* ===== NAV LIVRABLES (sur le fond, hors page) ===== */
+    .nav-livrables{
+      position: sticky;
+      top: 10px;
+      z-index: 999;
+      display:flex;
+      justify-content:center;
+      gap: 12px;
+      margin: 8px auto 14px;
+      max-width: 1024px;
+    }
+
+    .nav-btn{
+      display:inline-flex;
+      align-items:center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-family: "Source Code Pro", ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      border: 2px solid #2c241b;
+      box-shadow: 3px 3px 0 #2c241b;
+      background: rgba(253,251,247,0.92);
+      color: #2c241b;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+
+    .nav-btn:hover{ transform: translateY(-1px); }
+    .nav-btn:active{
+      transform: translateY(1px);
+      box-shadow: 2px 2px 0 #2c241b;
+    }
+
+    .nav-btn.primary{
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent-dark);
+      box-shadow: 3px 3px 0 var(--accent-dark);
+    }
+    .nav-btn.primary:active{
+      box-shadow: 2px 2px 0 var(--accent-dark);
+    }
+
+    .nav-badge{
+      display:inline-grid;
+      place-items:center;
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      border: 1px solid rgba(0,0,0,0.25);
+      background: rgba(255,255,255,0.25);
+      font-size: 14px;
+    }
+
     .page{
       max-width: 1024px;
       margin: 0 auto;
@@ -657,6 +714,19 @@
 <body>
   <div class="bg-texture" aria-hidden="true"></div>
 
+  <!-- NAV SUR LE FOND (hors .page) -->
+  <nav class="nav-livrables" aria-label="Navigation livrables">
+    <a class="nav-btn" href="index.html">
+      <span class="nav-badge" aria-hidden="true">0</span>
+      Livrable 0
+    </a>
+
+    <a class="nav-btn primary" href="page_livrable_1.html">
+      <span class="nav-badge" aria-hidden="true">1</span>
+      Livrable 1
+    </a>
+  </nav>
+
   <div class="page">
     <header>
       <div class="header-inner">
@@ -861,7 +931,7 @@
         <div style="max-width: 680px;">
           <h3><span class="i ok" aria-hidden="true">✓</span> Verdict Data Architect</h3>
           <p>
-            L’utilisation de SQL serait moins adaptée au périmètre du MVP (risque de sur‑dimensionnement).
+            L’utilisation de SQL serait moins adaptée au périmètre du MVP (risque de sur-dimensionnement).
             Nous validons l'architecture <span class="gold-underline">Firestore Native</span>.
             Cela garantit une performance optimale pour le sur-mesure.
           </p>
