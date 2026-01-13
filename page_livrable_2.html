@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Livrable 2 : Architecture Technique</title>
+
+  <!-- Fonts (optional) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700;800&family=Source+Code+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #cfc6b8;
+      --ink: #2c241b;
+      --paper: #fdfbf7;
+      --paper-border: #d6cbb8;
+      --accent: #e85d04;
+      --accent-dark: #8c3802;
+      --muted: #6b5d52;
+      --shadow: rgba(0,0,0,0.2);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: "Source Serif 4", ui-serif, Georgia, serif;
+      background: var(--bg);
+      color: var(--ink);
+      padding: 10px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    ::selection{ background:#d4b483; color:#2c241b; }
+
+    .bg-texture{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      opacity:.10;
+      background-image: radial-gradient(#4a4036 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    .page{
+      max-width: 1024px;
+      margin: 0 auto;
+      background: var(--paper);
+      border: 1px solid var(--paper-border);
+      position: relative;
+      z-index: 2;
+      box-shadow:
+        10px 10px 20px var(--shadow),
+        inset 0 0 60px rgba(255,255,220,0.5);
+      overflow:hidden;
+    }
+
+    .page::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background-image: url('https://www.transparenttextures.com/patterns/cream-paper.png');
+      opacity: .50;
+      pointer-events:none;
+      z-index:0;
+    }
+
+    header{
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(253,251,247,0.95);
+      backdrop-filter: blur(6px);
+      border-bottom: 2px solid #bdafa0;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+
+    .header-inner{
+      position: relative;
+      z-index: 2;
+      padding: 24px 32px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 16px;
+      background-image: linear-gradient(transparent 95%, #e5e7eb 95%);
+      background-size: 100% 2rem;
+    }
+
+    .title-row{ display:flex; align-items:center; gap: 12px; margin:0; }
+
+    .logo-badge{
+      width: 40px; height: 40px;
+      display:grid; place-items:center;
+      background: var(--accent);
+      color: white;
+      border: 1px solid var(--accent-dark);
+      border-radius: 8px;
+      box-shadow: 2px 2px 0 var(--accent-dark);
+      flex: 0 0 auto;
+      font-weight: 800;
+      font-family: "Source Code Pro", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    h1{
+      margin:0;
+      font-size: 22px;
+      font-weight: 800;
+      color: #1a1410;
+      letter-spacing: -0.01em;
+      text-shadow: 1px 1px 0 #d4b483;
+    }
+
+    .underline-accent{
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-decoration-color: var(--accent);
+      text-underline-offset: 6px;
+    }
+
+    .subtitle{
+      margin: 10px 0 0;
+      font-family: "Source Code Pro", ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+
+    .dot{ width: 8px; height: 8px; border-radius:999px; background: var(--muted); display:inline-block; }
+
+    .stamp{
+      display:none;
+      transform: rotate(-2deg);
+      border: 4px solid rgba(140,56,2,0.30);
+      padding: 8px 12px;
+      border-radius: 10px;
+      align-self:flex-start;
+      background: rgba(253,251,247,0.45);
+    }
+    .stamp .top{ font-family:"Source Code Pro", monospace; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color: rgba(140,56,2,0.60); font-weight:700; text-align:right; }
+    .stamp .date{ font-family:"Source Code Pro", monospace; font-size:18px; font-weight:800; color: rgba(140,56,2,0.80); text-align:right; margin-top:4px; }
+
+    main{
+      position: relative;
+      z-index: 2;
+      padding: 40px 32px;
+      display:flex;
+      flex-direction:column;
+      gap: 64px;
+    }
+
+    .hole{ position:absolute; left: 10px; width: 16px; height:16px; border-radius:999px; background:#5c5042; box-shadow: inset 1px 1px 3px rgba(0,0,0,0.6); z-index:3; }
+    .hole.h1{ top: 90px; }
+    .hole.h2{ top: 50%; transform: translateY(-50%); }
+    .hole.h3{ bottom: 90px; }
+
+    .section-title{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 800;
+      margin:0 0 18px;
+    }
+
+    /* Pinned note */
+    .note{
+      background: #fff9e6;
+      border: 1px solid #e6dcc3;
+      padding: 28px;
+      box-shadow: 3px 3px 10px rgba(0,0,0,0.10);
+      transform: rotate(0.5deg);
+      position: relative;
+    }
+
+    .pin{
+      position:absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 16px;
+      height: 16px;
+      border-radius:999px;
+      background: #7f1d1d;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.30);
+      z-index: 5;
+    }
+
+    .note h2{
+      margin:0 0 18px;
+      padding-bottom: 10px;
+      border-bottom: 2px dotted #d4b483;
+      font-size: 18px;
+      font-weight: 800;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+
+    .badge{
+      width: 28px;
+      height: 28px;
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      border: 1px solid #15803d;
+      background: #dcfce7;
+      color: #15803d;
+      font-weight: 900;
+      font-family: "Source Code Pro", monospace;
+    }
+
+    .note p{
+      margin: 0;
+      color:#4a3e33;
+      line-height: 1.6;
+      font-weight: 600;
+      font-size: 18px;
+    }
+
+    .highlight{
+      background: #fef08a;
+      padding: 0 4px;
+      border-bottom: 1px solid #facc15;
+      font-weight: 900;
+      color: #000;
+      display:inline-block;
+      transform: skewX(-6deg);
+    }
+
+    /* Diagram container */
+    .diagram-title{
+      font-weight: 900;
+      color: var(--ink);
+      margin: 0 0 12px;
+      font-size: 16px;
+      border-bottom: 1px solid #bdafa0;
+      padding-bottom: 10px;
+      display:inline-block;
+    }
+
+    .diagram-wrap{
+      position: relative;
+      background:#fff;
+      padding: 8px;
+      border: 1px solid #2c241b;
+      box-shadow: 0 0 0 1px #ccc, 0 4px 0 0 #bbb;
+      overflow:hidden;
+    }
+
+    .diagram-grid{
+      position:absolute;
+      inset:0;
+      opacity:.10;
+      pointer-events:none;
+      background-image:
+        linear-gradient(#1e3a8a 1px, transparent 1px),
+        linear-gradient(90deg, #1e3a8a 1px, transparent 1px);
+      background-size: 20px 20px;
+      z-index:0;
+    }
+
+    .diagram-inner{
+      position: relative;
+      z-index: 2;
+      padding: 28px;
+      display:flex;
+      justify-content:center;
+      overflow:auto;
+      background: rgba(255,255,255,0.80);
+    }
+
+    .thumbtack{
+      position:absolute;
+      top: 28px;
+      width: 12px;
+      height: 12px;
+      border-radius:999px;
+      background: #7f1d1d;
+      border: 1px solid #9ca3af;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      z-index: 5;
+    }
+    .thumbtack.left{ left: -2px; }
+    .thumbtack.right{ right: -2px; }
+
+    /* Info cards */
+    .cards{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .card{
+      background:#fff;
+      border: 1px solid #e5e7eb;
+      border-top: 4px solid #2563eb;
+      padding: 18px;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.10);
+      transition: transform .15s ease;
+      position: relative;
+    }
+    .card:hover{ transform: translateY(-3px); }
+    .card.t-orange{ border-top-color:#f97316; }
+    .card.t-yellow{ border-top-color:#ca8a04; }
+    .card.t-purple{ border-top-color:#7c3aed; }
+
+    .tape{
+      position:absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%) rotate(1deg);
+      width: 48px;
+      height: 24px;
+      background: rgba(255,255,255,0.50);
+      border-left: 1px solid rgba(255,255,255,0.80);
+      border-right: 1px solid rgba(255,255,255,0.80);
+      backdrop-filter: blur(3px);
+      opacity: .60;
+    }
+
+    .icon-bubble{
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 2px dashed #d1d5db;
+      background:#f9fafb;
+      display:grid;
+      place-items:center;
+      font-size: 18px;
+      color:#374151;
+      margin-bottom: 10px;
+    }
+
+    .card h4{ margin:0 0 8px; font-size: 18px; font-weight: 900; }
+    .card p{ margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; font-size: 13px; color:#5c5042; line-height: 1.5; }
+
+    /* Flows */
+    .flows{ display:grid; grid-template-columns: 1fr; gap: 16px; }
+
+    .flow-box{
+      position: relative;
+      padding: 18px;
+      border: 1px solid #e6dcc3;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .flow-box.yellow{ background:#fff9e6; border-color:#e6dcc3; transform: rotate(-1deg); }
+    .flow-box.blue{ background:#eff6ff; border-color:#bfdbfe; transform: rotate(1deg); }
+
+    .sticker{
+      position:absolute;
+      top:-12px;
+      width: 40px;
+      height: 40px;
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      font-family:"Source Code Pro", monospace;
+      font-weight: 900;
+      font-size: 12px;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+      border: 2px solid rgba(253,251,247,0.9);
+    }
+    .sticker.s1{ left:-12px; background:#15803d; color:#fff9e6; }
+    .sticker.s2{ right:-12px; background:#1d4ed8; color:#eff6ff; }
+
+    .flow-title{
+      margin: 0 0 12px;
+      font-weight: 900;
+      font-size: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #d4b483;
+    }
+    .flow-title.blue{ color:#1e3a8a; border-bottom-color:#bfdbfe; text-align:right; padding-right: 16px; }
+    .flow-title.yellow{ color:#2c241b; padding-left: 16px; }
+
+    .steps{ margin-top: 8px; }
+
+    .step{
+      position: relative;
+      padding-left: 18px;
+      margin-left: 6px;
+      padding-bottom: 12px;
+      border-left: 2px dashed #d1d5db;
+      font-family: "Source Code Pro", monospace;
+      font-size: 13px;
+      color:#4a3e33;
+    }
+    .step:last-child{ padding-bottom: 0; }
+
+    .step::before{
+      content:"";
+      position:absolute;
+      left: -6px;
+      top: 8px;
+      width: 8px;
+      height: 8px;
+      border-radius:999px;
+      background:#9ca3af;
+    }
+
+    .step h5{
+      margin:0;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      color: inherit;
+    }
+    .step p{
+      margin: 6px 0 0;
+      font-style: italic;
+      opacity: .85;
+      font-family: "Source Code Pro", monospace;
+      color: inherit;
+      font-size: 12px;
+    }
+
+    .flow-box.blue .step{ color:#1e40af; }
+
+    /* Ledger table */
+    .ledger-wrap{
+      background:#fff;
+      border: 2px solid #2c241b;
+      box-shadow: 0 0 0 1px #ccc, 0 4px 0 0 #bbb;
+      overflow:hidden;
+    }
+
+    table{ width:100%; border-collapse:collapse; }
+    thead th{
+      background:#e5e7eb;
+      color:#1f2937;
+      font-family:"Source Code Pro", monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      border-bottom: 4px solid #2c241b;
+      padding: 14px;
+      text-align:left;
+      border-right: 1px solid #9ca3af;
+    }
+    thead th:last-child{ border-right:none; }
+
+    tbody td{
+      padding: 14px;
+      border-bottom: 1px solid #d1d5db;
+      font-size: 13px;
+      font-weight: 600;
+      color:#4b5563;
+      background-image: linear-gradient(transparent 95%, #e5e7eb 95%);
+      background-size: 100% 2rem;
+      border-right: 1px solid #d1d5db;
+    }
+    tbody td:last-child{ border-right:none; }
+
+    .entity{ font-weight: 900; color:#374151; display:flex; align-items:center; gap:10px; }
+    .muted-italic{ font-style: italic; font-family: "Source Serif 4", serif; }
+
+    .owner-only{
+      color:#7f1d1d;
+      background:#fef2f2;
+      font-weight: 900;
+      border-left: 4px solid #fecaca;
+    }
+
+    /* Footer conclusion */
+    .footer-verdict{
+      background:#2c241b;
+      color:#fdfbf7;
+      padding: 28px;
+      border-top: 8px solid var(--accent);
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.50);
+      display:flex;
+      flex-direction:column;
+      gap: 18px;
+      position: relative;
+      margin-top: 10px;
+    }
+
+    .paperclip{
+      position:absolute;
+      top:-28px;
+      right: 40px;
+      transform: rotate(12deg);
+      color:#9ca3af;
+      font-size: 44px;
+      user-select:none;
+    }
+
+    .footer-verdict h3{
+      margin:0;
+      font-size: 18px;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+
+    .footer-verdict p{
+      margin:0;
+      color:#d6cbb8;
+      font-size: 18px;
+      line-height: 1.6;
+    }
+
+    .next-step{
+      align-self:flex-start;
+      border: 4px solid var(--accent);
+      padding: 14px 22px;
+      border-radius: 10px;
+      transform: rotate(-3deg);
+      background: rgba(232,93,4,0.10);
+      min-width: 220px;
+      text-align:center;
+      mask-image: url('https://www.transparenttextures.com/patterns/black-linen.png');
+      -webkit-mask-image: url('https://www.transparenttextures.com/patterns/black-linen.png');
+    }
+
+    .next-step .small{
+      display:block;
+      font-family:"Source Code Pro", monospace;
+      text-transform: uppercase;
+      letter-spacing: .10em;
+      color:#fdba74;
+      font-size: 11px;
+      margin-bottom: 6px;
+    }
+
+    .next-step .big{
+      display:block;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      color: var(--accent);
+      text-transform: uppercase;
+      font-family: "Source Code Pro", monospace;
+    }
+
+    footer{
+      padding: 22px 18px;
+      text-align:center;
+      color:#8c7e72;
+      font-size: 12px;
+      border-top: 1px solid var(--paper-border);
+      background:#f3efe6;
+      font-family:"Source Code Pro", monospace;
+      position: relative;
+      z-index: 2;
+    }
+
+    @media (min-width: 640px){
+      body{ padding: 24px; }
+      .stamp{ display:block; }
+      .cards{ grid-template-columns: repeat(2, 1fr); }
+      .flows{ grid-template-columns: 1fr 1fr; gap: 22px; }
+    }
+
+    @media (min-width: 1024px){
+      .cards{ grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-texture" aria-hidden="true"></div>
+
+  <div class="page">
+    <header>
+      <div class="header-inner">
+        <div>
+          <div class="title-row">
+            <div class="logo-badge" aria-hidden="true">🧱</div>
+            <h1><span class="underline-accent">Livrable 2 : Architecture Technique</span></h1>
+          </div>
+          <p class="subtitle"><span class="dot"></span> SlowMode MVP • Data Architect</p>
+        </div>
+
+        <div class="stamp" aria-label="Date">
+          <div class="top">Délivré le</div>
+          <div class="date">14 JAN 2026</div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- HOLE PUNCHES -->
+      <div class="hole h1" aria-hidden="true"></div>
+      <div class="hole h2" aria-hidden="true"></div>
+      <div class="hole h3" aria-hidden="true"></div>
+
+      <!-- 1. INTRODUCTION -->
+      <section class="note">
+        <div class="pin" aria-hidden="true"></div>
+        <h2>
+          <span class="badge" aria-hidden="true">🖧</span>
+          1. Vue d’ensemble (Serverless)
+        </h2>
+
+        <p>
+          L’architecture repose sur une approche <span class="highlight">Mobile‑First Serverless</span> utilisant l’écosystème Google Firebase.
+          L’application mobile communique directement avec les services gérés (bases de données, stockage de fichiers) pour la lecture/écriture standard,
+          tandis que les traitements sensibles (paiements, notifications) sont pris en charge via des Cloud Functions.
+        </p>
+      </section>
+
+      <!-- DIAGRAM -->
+      <section style="position:relative;">
+        <h3 class="diagram-title">Schéma Technique C4 (Niveau 2)</h3>
+
+        <div class="diagram-wrap">
+          <div class="diagram-grid" aria-hidden="true"></div>
+
+          <div class="diagram-inner">
+            <!-- SVG kept as-is (design intact) -->
+            <svg width="800" height="500" viewBox="0 0 800 500" style="width:100%; max-width: 900px;">
+              <defs>
+                <marker id="arrowhead-sharp" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#1e293b" />
+                </marker>
+              </defs>
+
+              <!-- ZONES -->
+              <rect x="20" y="20" width="180" height="460" rx="4" fill="#f8fafc" stroke="#3b82f6" stroke-width="2" stroke-dasharray="5,5" />
+              <text x="110" y="45" text-anchor="middle" style="font: 700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial; fill:#1e40af; letter-spacing:.08em; text-transform:uppercase;">📱 Client Side</text>
+
+              <rect x="250" y="20" width="300" height="460" rx="4" fill="#fff7ed" stroke="#f97316" stroke-width="2" stroke-dasharray="5,5" />
+              <text x="400" y="45" text-anchor="middle" style="font: 700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial; fill:#9a3412; letter-spacing:.08em; text-transform:uppercase;">☁️ Firebase Eco</text>
+
+              <rect x="600" y="150" width="180" height="200" rx="4" fill="#f0fdf4" stroke="#22c55e" stroke-width="2" stroke-dasharray="5,5" />
+              <text x="690" y="175" text-anchor="middle" style="font: 700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial; fill:#166534; letter-spacing:.08em; text-transform:uppercase;">🌍 Services Tiers</text>
+
+              <!-- NODES -->
+              <g transform="translate(50, 200)">
+                <rect width="120" height="80" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="2" filter="drop-shadow(3px 3px 0px rgba(0,0,0,0.1))"/>
+                <text x="60" y="35" text-anchor="middle" style="font: 700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial; fill:#1e293b;">SlowMode App</text>
+                <text x="60" y="55" text-anchor="middle" style="font: 600 11px 'Source Code Pro', ui-monospace, SFMono-Regular, Menlo, monospace; fill:#64748b;">React Native</text>
+              </g>
+
+              <g transform="translate(280, 60)">
+                <rect width="110" height="60" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="2" filter="drop-shadow(3px 3px 0px rgba(249,115,22,0.2))"/>
+                <text x="55" y="25" text-anchor="middle" style="font: 700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial; fill:#1e293b;">Auth</text>
+                <text x="55" y="45" text-anchor="middle" style="font: 600 11px 'Source Code Pro', ui-monospace, SFMono-Regular, Menlo, monospace; fill:#64748b;">Identity</text>
+              </g>
+
+              <g transform="translate(280, 140)">
+                <rect width="110" height="60" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="2" filter="drop-shadow(3px 3px 0px rgba(249,115,22,0.2))"/>
+                <text x="55" y="25" text-anchor="middle" style="font: 700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial; fill:#1e293b;">Firestore</text>
+                <text x="55" y="45" text-anchor="middle" style="font: 600 11px 'Source Code Pro', ui-monospace, SFMono-Regular, Menlo, monospace; fill:#64748b;">NoSQL DB</text>
+              </g>
+
+              <g transform="translate(280, 220)">
+                <rect width="110" height="60" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="2" filter="drop-shadow(3px 3px 0px rgba(249,115,22,0.2))"/>
+                <text x="55" y="25" text-anchor="middle" style="font: 700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial; fill:#1e293b;">Storage</text>
+                <text x="55" y="45" text-anchor="middle" style="font: 600 11px 'Source Code Pro', ui-monospace, SFMono-Regular, Menlo, monospace; fill:#64748b;">Files/Photos</text>
+              </g>
+
+              <g transform="translate(420, 300)">
+                <rect width="110" height="60" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="2" filter="drop-shadow(3px 3px 0px rgba(249,115,22,0.2))"/>
+                <text x="55" y="25" text-anchor="middle" style="font: 700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial; fill:#1e293b;">Functions</text>
+                <text x="55" y="45" text-anchor="middle" style="font: 600 11px 'Source Code Pro', ui-monospace, SFMono-Regular, Menlo, monospace; fill:#64748b;">Backend Logic</text>
+              </g>
+
+              <g transform="translate(280, 380)">
+                <rect width="110" height="60" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="2" filter="drop-shadow(3px 3px 0px rgba(249,115,22,0.2))"/>
+                <text x="55" y="25" text-anchor="middle" style="font: 700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial; fill:#1e293b;">FCM</text>
+                <text x="55" y="45" text-anchor="middle" style="font: 600 11px 'Source Code Pro', ui-monospace, SFMono-Regular, Menlo, monospace; fill:#64748b;">Push Notif</text>
+              </g>
+
+              <g transform="translate(630, 200)">
+                <rect width="120" height="50" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="2" filter="drop-shadow(3px 3px 0px rgba(34,197,94,0.2))"/>
+                <text x="60" y="30" text-anchor="middle" style="font: 700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial; fill:#1e293b;">Stripe</text>
+              </g>
+
+              <g transform="translate(630, 270)">
+                <rect width="120" height="50" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="2" filter="drop-shadow(3px 3px 0px rgba(34,197,94,0.2))"/>
+                <text x="60" y="30" text-anchor="middle" style="font: 700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial; fill:#1e293b;">Algolia</text>
+              </g>
+
+              <!-- LINKS -->
+              <path d="M170 220 C 200 220, 200 90, 280 90" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead-sharp)" />
+              <path d="M170 240 C 220 240, 220 170, 280 170" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead-sharp)" />
+              <path d="M170 260 L 280 260" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead-sharp)" />
+              <path d="M110 280 L 110 330 L 420 330" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead-sharp)" />
+              <path d="M530 310 C 560 310, 560 225, 630 225" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead-sharp)" />
+              <path d="M390 250 C 405 250, 405 310, 420 310" fill="none" stroke="#94a3b8" stroke-dasharray="4" stroke-width="2" marker-end="url(#arrowhead-sharp)" />
+              <path d="M390 170 C 500 170, 500 295, 630 295" fill="none" stroke="#94a3b8" stroke-dasharray="4" stroke-width="2" marker-end="url(#arrowhead-sharp)" />
+              <path d="M475 360 L 475 410 L 390 410" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead-sharp)" />
+              <path d="M280 410 L 110 410 L 110 280" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead-sharp)" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="thumbtack left" aria-hidden="true"></div>
+        <div class="thumbtack right" aria-hidden="true"></div>
+      </section>
+
+      <!-- 2. COMPONENTS -->
+      <section>
+        <h2 class="section-title"><span aria-hidden="true">🧠</span> 2. Composants Techniques</h2>
+
+        <div class="cards">
+          <div class="card">
+            <div class="tape" aria-hidden="true"></div>
+            <div class="icon-bubble" aria-hidden="true">📱</div>
+            <h4>A. Client Mobile</h4>
+            <p>Application React Native intégrant le SDK Firebase. Gère le mode hors‑ligne et l’optimisation (ex. compression) des images.</p>
+          </div>
+
+          <div class="card t-orange">
+            <div class="tape" aria-hidden="true"></div>
+            <div class="icon-bubble" aria-hidden="true">🔐</div>
+            <h4>B. Authentication</h4>
+            <p>Gestion de l’authentification (Email, Google, Apple). Fournit l’UID nécessaire à l’application des règles de sécurité et au contrôle d’accès.</p>
+          </div>
+
+          <div class="card t-orange">
+            <div class="tape" aria-hidden="true"></div>
+            <div class="icon-bubble" aria-hidden="true">🗄️</div>
+            <h4>C. Cloud Firestore</h4>
+            <p>Base NoSQL orientée documents. Stocke profils, commandes et conversations. Supporte la synchronisation en temps réel.</p>
+          </div>
+
+          <div class="card t-yellow">
+            <div class="tape" aria-hidden="true"></div>
+            <div class="icon-bubble" aria-hidden="true">☁️</div>
+            <h4>D. Cloud Storage</h4>
+            <p>Stockage des fichiers volumineux (photos). Firestore conserve les métadonnées et les références (URLs). Déclenche des événements à l’upload.</p>
+          </div>
+
+          <div class="card t-purple">
+            <div class="tape" aria-hidden="true"></div>
+            <div class="icon-bubble" aria-hidden="true">⚙️</div>
+            <h4>E. Cloud Functions</h4>
+            <p>Traitements backend sécurisés : paiements Stripe, redimensionnement d’images, tâches d’administration et automatisations applicatives.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. DATA FLOWS -->
+      <section class="flows">
+        <div class="flow-box yellow">
+          <div class="sticker s1" aria-hidden="true">S1</div>
+          <h3 class="flow-title yellow">Scénario 1 : Chat Temps Réel</h3>
+
+          <div class="steps">
+            <div class="step">
+              <h5>Envoi</h5>
+              <p>L’application écrit un document JSON dans la sous‑collection <code>messages</code>.</p>
+            </div>
+            <div class="step">
+              <h5>Sécurité</h5>
+              <p>Les Firestore Security Rules contrôlent l’identité de l’auteur et les droits d’accès.</p>
+            </div>
+            <div class="step">
+              <h5>Distribution</h5>
+              <p>Les clients abonnés reçoivent la mise à jour via le mécanisme natif de synchronisation temps réel (listeners).</p>
+            </div>
+            <div class="step">
+              <h5>Notification</h5>
+              <p>En cas d’inactivité (selon la logique produit), une Cloud Function peut déclencher une notification via FCM.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-box blue">
+          <div class="sticker s2" aria-hidden="true">S2</div>
+          <h3 class="flow-title blue">Scénario 2 : Mise en vente d’un tissu</h3>
+
+          <div class="steps">
+            <div class="step">
+              <h5>Image</h5>
+              <p>Upload de la photo vers Cloud Storage.</p>
+            </div>
+            <div class="step">
+              <h5>URL</h5>
+              <p>Storage retourne une URL signée ou une référence sécurisée selon la configuration.</p>
+            </div>
+            <div class="step">
+              <h5>Données</h5>
+              <p>Création d’un document <code>Fabric</code> (titre, prix, référence image) dans Firestore.</p>
+            </div>
+            <div class="step">
+              <h5>Indexation</h5>
+              <p>Une Cloud Function synchronise les données vers Algolia pour la recherche.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. SECURITY MATRIX -->
+      <section>
+        <h2 class="section-title"><span aria-hidden="true">🛡️</span> 4. Matrice de Sécurité (Firestore Rules)</h2>
+
+        <div class="ledger-wrap">
+          <div style="overflow:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Entité</th>
+                  <th>Lecture (Read)</th>
+                  <th>Écriture (Write)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="entity"><span aria-hidden="true">📄</span> Profil User</td>
+                  <td class="muted-italic">Public (informations de base)</td>
+                  <td class="owner-only">Propriétaire uniquement</td>
+                </tr>
+                <tr>
+                  <td class="entity"><span aria-hidden="true">🧵</span> Tissu (Fabric)</td>
+                  <td class="muted-italic">Public</td>
+                  <td class="muted-italic">Vendeur (création) / Système (statut “vendu”)</td>
+                </tr>
+                <tr>
+                  <td class="entity"><span aria-hidden="true">💳</span> Commande</td>
+                  <td class="muted-italic">Client & artisan concernés</td>
+                  <td class="muted-italic">Client & artisan concernés</td>
+                </tr>
+                <tr>
+                  <td class="entity"><span aria-hidden="true">🔔</span> Message</td>
+                  <td class="muted-italic">Participants de la conversation</td>
+                  <td class="muted-italic">Participants de la conversation</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. CONCLUSION -->
+      <section class="footer-verdict">
+        <div class="paperclip" aria-hidden="true">📎</div>
+
+        <div style="max-width: 680px;">
+          <h3><span aria-hidden="true">✅</span> 5. Conclusion (Architecture)</h3>
+          <p>
+            Cette architecture Serverless répond aux objectifs du MVP : accélérer la mise en œuvre, limiter la charge d’exploitation initiale et permettre une montée en charge progressive.
+            Le recours à Firebase (Spark Plan au lancement, selon le volume d’usage) permet de démarrer rapidement tout en conservant un cadre de sécurité via les Rules et les Functions.
+          </p>
+        </div>
+
+        <div class="next-step" aria-label="Prochaine étape">
+          <span class="small">Prochaine étape</span>
+          <span class="big">Blueprint JSON</span>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      &copy; 2026 SlowMode Project - CONFIDENTIAL - DO NOT DISTRIBUTE
+    </footer>
+  </div>
+</body>
+</html>

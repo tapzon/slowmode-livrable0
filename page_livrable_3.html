@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Livrable 3 : Blueprint Firestore</title>
+
+  <!-- Fonts (optional) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700;800&family=Source+Code+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #cfc6b8;
+      --ink: #2c241b;
+      --paper: #fdfbf7;
+      --paper-border: #d6cbb8;
+      --muted: #6b5d52;
+      --navy: #1e293b;
+      --navy-dark: #0f172a;
+      --indigo: #4338ca;
+      --orange: #ea580c;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: "Source Serif 4", ui-serif, Georgia, serif;
+      background: var(--bg);
+      color: var(--ink);
+      padding: 10px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    ::selection{ background:#d4b483; color:#2c241b; }
+
+    .bg-texture{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      opacity:.10;
+      background-image: radial-gradient(#4a4036 1px, transparent 1px);
+      background-size: 20px 20px;
+      z-index:0;
+    }
+
+    .page{
+      max-width: 1152px;
+      margin: 0 auto;
+      background: var(--paper);
+      border: 1px solid var(--paper-border);
+      position: relative;
+      z-index: 2;
+      box-shadow:
+        10px 10px 20px rgba(0,0,0,0.2),
+        inset 0 0 60px rgba(255,255,220,0.5);
+      overflow:hidden;
+    }
+
+    .page::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background-image: url('https://www.transparenttextures.com/patterns/cream-paper.png');
+      opacity: .50;
+      pointer-events:none;
+      z-index:0;
+    }
+
+    header{
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(253,251,247,0.95);
+      backdrop-filter: blur(6px);
+      border-bottom: 2px solid #bdafa0;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+
+    .header-inner{
+      position: relative;
+      z-index: 2;
+      padding: 24px 32px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 16px;
+      background-image: linear-gradient(transparent 95%, #e5e7eb 95%);
+      background-size: 100% 2rem;
+    }
+
+    .title-row{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      margin:0;
+    }
+
+    .logo-badge{
+      width: 40px;
+      height: 40px;
+      display:grid;
+      place-items:center;
+      background: var(--navy);
+      color: white;
+      border: 1px solid var(--navy-dark);
+      border-radius: 8px;
+      box-shadow: 2px 2px 0 var(--navy-dark);
+      flex: 0 0 auto;
+      font-weight: 800;
+      font-family: "Source Code Pro", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    h1{
+      margin:0;
+      font-size: 22px;
+      font-weight: 800;
+      color: #1a1410;
+      letter-spacing: -0.01em;
+      text-shadow: 1px 1px 0 #d4b483;
+    }
+
+    .underline-navy{
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-decoration-color: var(--navy);
+      text-underline-offset: 6px;
+    }
+
+    .subtitle{
+      margin: 10px 0 0;
+      font-family: "Source Code Pro", ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+
+    .dot{
+      width: 8px;
+      height: 8px;
+      border-radius:999px;
+      background: var(--muted);
+      display:inline-block;
+    }
+
+    .stamp{
+      display:none;
+      transform: rotate(-2deg);
+      border: 4px solid rgba(30,41,59,0.30);
+      padding: 8px 12px;
+      border-radius: 10px;
+      align-self:flex-start;
+      background: rgba(253,251,247,0.45);
+    }
+    .stamp .top{ font-family:"Source Code Pro", monospace; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color: rgba(30,41,59,0.60); font-weight:700; text-align:right; }
+    .stamp .date{ font-family:"Source Code Pro", monospace; font-size:18px; font-weight:800; color: rgba(30,41,59,0.80); text-align:right; margin-top:4px; }
+
+    main{
+      position: relative;
+      z-index: 2;
+      padding: 40px 32px;
+      display:flex;
+      flex-direction:column;
+      gap: 64px;
+    }
+
+    .hole{ position:absolute; left: 10px; width: 16px; height:16px; border-radius:999px; background:#5c5042; box-shadow: inset 1px 1px 3px rgba(0,0,0,0.6); z-index:3; }
+    .hole.h1{ top: 90px; }
+    .hole.h2{ top: 50%; transform: translateY(-50%); }
+    .hole.h3{ bottom: 90px; }
+
+    /* Section headers */
+    .h2{
+      font-size: 18px;
+      font-weight: 800;
+      margin:0 0 18px;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+
+    .h2.dotted{
+      border-bottom: 2px dotted #d4b483;
+      padding-bottom: 10px;
+      width: fit-content;
+    }
+
+    /* Tree / arborescence */
+    .tree-box{
+      background:#fff;
+      border: 1px solid #e5e7eb;
+      padding: 18px;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.10);
+      position: relative;
+    }
+
+    .tree-grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 28px;
+      font-family: "Source Code Pro", monospace;
+      font-size: 13px;
+    }
+
+    .splitter{ border-bottom: 1px dashed #d1d5db; margin: 16px 0; }
+
+    .tree-item{ position: relative; }
+    .tree-item.nested{ margin-left: 24px; padding-left: 14px; border-left: 2px dotted #9ca3af; }
+
+    .tree-row{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      padding: 4px 0;
+    }
+
+    .label-root{ font-weight: 800; color:#1f2937; }
+    .label-nested{ color:#4b5563; }
+
+    .tree-row .label:hover{ text-decoration: underline; text-underline-offset: 3px; text-decoration-color:#9ca3af; }
+
+    .sub-badge{
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-weight: 800;
+      padding: 3px 6px;
+      border-radius: 6px;
+      background:#e0e7ff;
+      border: 1px solid #c7d2fe;
+      color:#3730a3;
+      margin-left: 6px;
+    }
+
+    .icon{ width: 16px; height:16px; display:inline-grid; place-items:center; font-size: 14px; }
+    .icon.folder.root{ color: var(--orange); }
+    .icon.folder.sub{ color: var(--indigo); }
+    .icon.file{ color:#6b7280; }
+
+    .legend{
+      margin-top: 18px;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 10px;
+      font-family: "Source Code Pro", monospace;
+      font-size: 11px;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .thumbtack{
+      position:absolute;
+      top: 0;
+      right: 0;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background:#1e40af;
+      border: 1px solid #9ca3af;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+      z-index: 5;
+    }
+
+    /* DocSpec */
+    .docspec{
+      position: relative;
+      padding-left: 22px;
+    }
+
+    .docspec::before{
+      content:"";
+      position:absolute;
+      left:0;
+      top:0;
+      bottom:0;
+      width: 6px;
+      background:#d6cbb8;
+      border-right: 1px solid rgba(255,255,255,0.5);
+      transition: background-color .15s ease;
+    }
+
+    .docspec:hover::before{ background:#9ca3af; }
+
+    .docspec h3{
+      margin: 0 0 6px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .path-chip{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      width: fit-content;
+      font-family: "Source Code Pro", monospace;
+      font-size: 11px;
+      color: var(--navy);
+      background:#e5e7eb;
+      border: 1px solid #d1d5db;
+      padding: 4px 8px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .desc{
+      margin: 0 0 12px;
+      font-size: 13px;
+      color:#4b5563;
+      font-style: italic;
+      border-left: 2px solid #d1d5db;
+      padding-left: 10px;
+    }
+
+    /* JSON CRT blocks */
+    .json-block{
+      border-radius: 12px;
+      overflow:hidden;
+      border: 2px solid #000;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.30);
+      background:#0c0c0c;
+      font-family: "Source Code Pro", monospace;
+      font-size: 12px;
+      position: relative;
+      color:#22c55e;
+    }
+
+    .json-block.sub{ border-color:#6b7280; }
+
+    .json-block::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%);
+      background-size: 100% 4px;
+      pointer-events:none;
+      opacity: .20;
+      z-index: 2;
+    }
+
+    .json-header{
+      position: relative;
+      z-index: 3;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 6px 12px;
+      border-bottom: 1px solid #374151;
+      background:#1f2937;
+      color:#d1d5db;
+    }
+
+    .json-header.sub{ background:#4b5563; border-bottom-color:#6b7280; color:#fff; }
+
+    .json-header .title{
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-weight: 800;
+    }
+
+    .json-pre{
+      position: relative;
+      z-index: 3;
+      margin:0;
+      padding: 14px;
+      overflow:auto;
+      line-height: 1.6;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+      color:#22c55e;
+      white-space: pre;
+    }
+
+    .hl{ background:#064e3b; margin: 0 -14px; padding: 0 14px; color:#6ee7b7; }
+
+    .subsection{
+      margin-top: 14px;
+      padding-left: 12px;
+      border-left: 2px solid #d6cbb8;
+      margin-left: 8px;
+    }
+
+    .sub-label{
+      width: fit-content;
+      font-family: "Source Code Pro", monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-weight: 800;
+      color:#1e3a8a;
+      background:#eff6ff;
+      border: 1px solid #dbeafe;
+      padding: 5px 8px;
+      margin-bottom: 10px;
+      display:flex;
+      align-items:center;
+      gap: 6px;
+    }
+
+    /* Strategy + indexes */
+    .two-col{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      align-items:start;
+    }
+
+    .h3{
+      font-weight: 800;
+      margin:0 0 12px;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      border-bottom: 2px dotted #d4b483;
+      padding-bottom: 10px;
+    }
+
+    .strategy-card{
+      background:#1f2937;
+      border: 1px solid #4b5563;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+    }
+
+    .strategy-card h4{
+      margin:0 0 10px;
+      font-family: "Source Code Pro", monospace;
+      text-transform: uppercase;
+      letter-spacing: .10em;
+      font-size: 12px;
+      color:#f3f4f6;
+      border-bottom: 1px solid #4b5563;
+      padding-bottom: 10px;
+      font-weight: 800;
+    }
+
+    .strategy-card p{
+      margin:0 0 12px;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color:#d1d5db;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .gain{
+      display:flex;
+      align-items:flex-start;
+      gap: 8px;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:#111827;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 10px;
+      color:#9ca3af;
+      font-size: 12px;
+    }
+
+    .gain strong{ color:#e5e7eb; }
+
+    .indexes{
+      background:#18181b;
+      border: 1px solid #3f3f46;
+      color:#a1a1aa;
+      border-radius: 12px;
+      overflow:hidden;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+      position: relative;
+    }
+
+    .indexes .bar{
+      height: 24px;
+      background:#09090b;
+      border-bottom: 1px solid #3f3f46;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      padding: 0 12px;
+    }
+
+    .indexes .dot2{ width: 8px; height:8px; border-radius:999px; background:#52525b; }
+
+    .indexes .bar span{
+      font-family: "Source Code Pro", monospace;
+      font-size: 10px;
+      color:#71717a;
+      letter-spacing: .12em;
+    }
+
+    .indexes .content{
+      padding: 16px;
+      font-family: "Source Code Pro", monospace;
+      font-size: 12px;
+      color:#d4d4d8;
+      line-height: 1.6;
+    }
+
+    .index-item{ border-bottom: 1px solid #27272a; padding-bottom: 10px; margin-bottom: 10px; }
+    .index-item:last-child{ border-bottom:0; padding-bottom:0; margin-bottom:0; }
+
+    .ensure{ color:#a1a1aa; font-weight: 800; }
+    .field{ color:#60a5fa; margin-left: 14px; display:block; }
+    .note{ color:#52525b; font-size: 10px; font-style: italic; margin-left: 14px; }
+
+    .cursor{ color:#52525b; margin-top: 10px; }
+
+    /* Footer badge */
+    .ready{
+      display:flex;
+      justify-content:center;
+      margin-top: 10px;
+      opacity: .80;
+    }
+
+    .ready .badge{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      font-size: 12px;
+      color:#374151;
+      border: 2px dashed #374151;
+      padding: 10px 14px;
+      border-radius: 6px;
+    }
+
+    footer{
+      padding: 22px 18px;
+      text-align:center;
+      color:#8c7e72;
+      font-size: 12px;
+      border-top: 1px solid var(--paper-border);
+      background:#f3efe6;
+      font-family:"Source Code Pro", monospace;
+      position: relative;
+      z-index: 2;
+    }
+
+    @media (min-width: 640px){
+      body{ padding: 24px; }
+      .stamp{ display:block; }
+      .tree-grid{ grid-template-columns: 1fr 1fr; gap: 40px; }
+      .two-col{ grid-template-columns: 1fr 1fr; gap: 28px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-texture" aria-hidden="true"></div>
+
+  <div class="page">
+    <header>
+      <div class="header-inner">
+        <div>
+          <div class="title-row">
+            <div class="logo-badge" aria-hidden="true">🗄</div>
+            <h1><span class="underline-navy">Livrable 3 : Blueprint Firestore</span></h1>
+          </div>
+          <p class="subtitle"><span class="dot"></span> SlowMode MVP • Data Architect</p>
+        </div>
+
+        <!-- CHANGED: neutral + deliverable-oriented wording -->
+        <div class="stamp" aria-label="Date">
+          <div class="top">Délivré le</div>
+          <div class="date">14 JAN 2026</div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- HOLE PUNCHES -->
+      <div class="hole h1" aria-hidden="true"></div>
+      <div class="hole h2" aria-hidden="true"></div>
+      <div class="hole h3" aria-hidden="true"></div>
+
+      <!-- 1. OVERVIEW TREE -->
+      <section style="position:relative;">
+        <h2 class="h2 dotted"><span style="color:#4338ca;" aria-hidden="true">🧱</span> 1. Vue d'ensemble de l'Arborescence</h2>
+
+        <div class="tree-box">
+          <div class="tree-grid">
+
+            <!-- Left column -->
+            <div>
+              <div class="tree-item">
+                <div class="tree-row">
+                  <span class="icon folder root" aria-hidden="true">📂</span>
+                  <span class="label label-root">users</span>
+                </div>
+
+                <div class="tree-item nested">
+                  <div class="tree-row">
+                    <span class="icon file" aria-hidden="true">📄</span>
+                    <span class="label label-nested">{userId}</span>
+                  </div>
+
+                  <div class="tree-item nested">
+                    <div class="tree-row">
+                      <span class="icon folder sub" aria-hidden="true">📂</span>
+                      <span class="label label-nested">portfolio_items</span>
+                      <span class="sub-badge">Sub</span>
+                    </div>
+                  </div>
+
+                  <div class="tree-item nested">
+                    <div class="tree-row">
+                      <span class="icon folder sub" aria-hidden="true">📂</span>
+                      <span class="label label-nested">reviews</span>
+                      <span class="sub-badge">Sub</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="splitter" aria-hidden="true"></div>
+
+              <div class="tree-item">
+                <div class="tree-row">
+                  <span class="icon folder root" aria-hidden="true">📂</span>
+                  <span class="label label-root">fabrics</span>
+                </div>
+
+                <div class="tree-item nested">
+                  <div class="tree-row">
+                    <span class="icon file" aria-hidden="true">📄</span>
+                    <span class="label label-nested">{fabricId}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right column -->
+            <div>
+              <div class="tree-item">
+                <div class="tree-row">
+                  <span class="icon folder root" aria-hidden="true">📂</span>
+                  <span class="label label-root">orders</span>
+                </div>
+
+                <div class="tree-item nested">
+                  <div class="tree-row">
+                    <span class="icon file" aria-hidden="true">📄</span>
+                    <span class="label label-nested">{orderId}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="splitter" aria-hidden="true"></div>
+
+              <div class="tree-item">
+                <div class="tree-row">
+                  <span class="icon folder root" aria-hidden="true">📂</span>
+                  <span class="label label-root">conversations</span>
+                </div>
+
+                <div class="tree-item nested">
+                  <div class="tree-row">
+                    <span class="icon file" aria-hidden="true">📄</span>
+                    <span class="label label-nested">{conversationId}</span>
+                  </div>
+
+                  <div class="tree-item nested">
+                    <div class="tree-row">
+                      <span class="icon folder sub" aria-hidden="true">📂</span>
+                      <span class="label label-nested">messages</span>
+                      <span class="sub-badge">Sub</span>
+                    </div>
+
+                    <div class="tree-item nested">
+                      <div class="tree-row">
+                        <span class="icon file" aria-hidden="true">📄</span>
+                        <span class="label label-nested">{messageId}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <p class="legend">* Légende : 📂 Collection Racine | 📄 Document | ↳ 📂 Sous-Collection (Sub-collection)</p>
+        </div>
+
+        <div class="thumbtack" aria-hidden="true"></div>
+      </section>
+
+      <!-- 2. JSON SPECS -->
+      <section>
+        <h2 class="h2"><span style="color:#15803d;" aria-hidden="true">⌨</span> 2. Spécification des Documents JSON</h2>
+
+        <div style="display:flex; flex-direction:column; gap: 56px;">
+
+          <!-- A. USERS -->
+          <div class="docspec">
+            <div style="margin-bottom:12px;">
+              <h3>A. Collection Users &amp; Portfolio</h3>
+              <div class="path-chip"><span aria-hidden="true">&lt;/&gt;</span> /users/{userId}</div>
+              <p class="desc">Stocke les profils publics et privés. Les créations (Portfolio) sont isolées.</p>
+            </div>
+
+            <div class="json-block">
+              <div class="json-header"><span class="title">Root Document</span><span aria-hidden="true">●</span></div>
+              <pre class="json-pre">{
+  "email": "sophie.couture@email.com",
+  "pseudo": "SophieCrea",
+  "avatar_url": "https://storage.../avatar.jpg",
+  "roles": ["COUTURIER", "BUYER"],
+  "bio": "Passionnée de upcycling.",
+  "location": {
+    "city": "Lyon",
+    "zip_code": "69001",
+    "geo": "GeoPoint(45.76, 4.83)"
+  },
+  "stats": {
+    "rating_average": 4.8,
+    "projects_completed": 12
+  },
+  "created_at": "Timestamp(2026-01-05)"
+}</pre>
+            </div>
+
+            <div class="subsection">
+              <div class="sub-label"><span aria-hidden="true">↳</span> Sous-collection : portfolio_items</div>
+
+              <div class="json-block sub">
+                <div class="json-header sub"><span class="title">Sub-Document</span><span aria-hidden="true">●</span></div>
+                <pre class="json-pre">// Path: /users/{userId}/portfolio_items/{itemId}
+{
+  "title": "Robe de mariée Bohème",
+  "photo_urls": ["https://storage.../img1.jpg"],
+  "tags": ["Mariage", "Dentelle", "Robe"],
+  "likes_count": 142,
+  "created_at": "Timestamp(...)"
+}</pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- B. FABRICS -->
+          <div class="docspec">
+            <div style="margin-bottom:12px;">
+              <h3>B. Collection Fabrics (Marketplace)</h3>
+              <div class="path-chip"><span aria-hidden="true">&lt;/&gt;</span> /fabrics/{fabricId}</div>
+              <p class="desc">Catalogue des tissus. Inclut une dénormalisation partielle du vendeur.</p>
+            </div>
+
+            <div class="json-block">
+              <div class="json-header"><span class="title">Root Document</span><span aria-hidden="true">●</span></div>
+              <pre class="json-pre">{
+  "title": "Coupon de Soie Sauvage Rouge",
+  "material_type": "Soie",
+  "description": "Reste d'un projet. 3m.",
+  "dimensions": { "length_cm": 300, "width_cm": 140 },
+  "price": 45.00,
+  "currency": "EUR",
+  "photos": ["https://storage.../silk.jpg"],
+  "is_sold": false,
+  
+  // Dénormalisation (optimisation lecture)
+  <span class="hl">"seller": {</span>
+  <span class="hl">  "uid": "UserX99",</span>
+  <span class="hl">  "pseudo": "MarcVendeur",</span>
+  <span class="hl">  "avatar_preview": "https://storage.../s_av.jpg"</span>
+  <span class="hl">},</span>
+  
+  "created_at": "Timestamp(...)"
+}</pre>
+            </div>
+          </div>
+
+          <!-- C. ORDERS -->
+          <div class="docspec">
+            <div style="margin-bottom:12px;">
+              <h3>C. Collection Orders (Transaction)</h3>
+              <div class="path-chip"><span aria-hidden="true">&lt;/&gt;</span> /orders/{orderId}</div>
+              <p class="desc">Entité centrale. Contient tout le cycle de vie du projet sur-mesure.</p>
+            </div>
+
+            <div class="json-block">
+              <div class="json-header"><span class="title">Root Document</span><span aria-hidden="true">●</span></div>
+              <pre class="json-pre">{
+  "client_id": "UserClient1",
+  "couturier_id": "SophieCreaUID",
+  "linked_fabric_id": "Fab12345",
+  "status": "QUOTE_SENT",
+  
+  // Détails projet
+  "brief": "Jupe longue avec ce tissu rouge.",
+  "measurements": { "waist": 70, "hips": 95 },
+  
+  // Financier
+  "initial_quote": 120.00,
+  "final_price": 120.00,
+  "deposit_paid": false,
+  
+  "deadlines": {
+    "requested": "Timestamp(2026-03-01)",
+    "estimated_delivery": "Timestamp(2026-02-28)"
+  },
+  "created_at": "Timestamp(...)"
+}</pre>
+            </div>
+          </div>
+
+          <!-- D. CONVERSATIONS -->
+          <div class="docspec">
+            <div style="margin-bottom:12px;">
+              <h3>D. Collection Conversations (Chat)</h3>
+              <div class="path-chip"><span aria-hidden="true">&lt;/&gt;</span> /conversations/{convId}</div>
+              <p class="desc">Support du chat. Les messages sont isolés dans une sous-collection.</p>
+            </div>
+
+            <div class="json-block">
+              <div class="json-header"><span class="title">Root Document</span><span aria-hidden="true">●</span></div>
+              <pre class="json-pre">{
+  // Tableau pour requêtes "array-contains"
+  "participant_ids": ["UserClient1", "SophieCreaUID"],
+  
+  // Copie légère pour liste des conversations
+  "participants_data": {
+    "UserClient1": { "pseudo": "Julie", "avatar": "..." },
+    "SophieCreaUID": { "pseudo": "Sophie", "avatar": "..." }
+  },
+  "linked_order_id": "Ord998877",
+  
+  // Dénormalisation : dernier message
+  <span class="hl">"last_message": {</span>
+  <span class="hl">  "content": "C'est parfait, je valide !",</span>
+  <span class="hl">  "sent_at": "Timestamp(...)",</span>
+  <span class="hl">  "read_by": ["UserClient1"]</span>
+  <span class="hl">},</span>
+  
+  "updated_at": "Timestamp(...)"
+}</pre>
+            </div>
+
+            <div class="subsection">
+              <div class="sub-label"><span aria-hidden="true">↳</span> Sous-collection : messages</div>
+
+              <div class="json-block sub">
+                <div class="json-header sub"><span class="title">Sub-Document</span><span aria-hidden="true">●</span></div>
+                <pre class="json-pre">// Path: /conversations/{convId}/messages/{msgId}
+{
+  "sender_id": "UserClient1",
+  "content": "C'est parfait, je valide le devis !",
+  "type": "TEXT", // ou IMAGE, FILE
+  "attachments": [],
+  "created_at": "Timestamp(...)"
+}</pre>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 3 + 4 strategy & indexes -->
+      <section class="two-col">
+        <div>
+          <h3 class="h3"><span aria-hidden="true">🔀</span> 3. Stratégie de Dénormalisation</h3>
+
+          <div style="display:flex; flex-direction:column; gap: 14px;">
+            <div class="strategy-card">
+              <h4>Profil vendeur dans Fabrics</h4>
+              <p>Copie de “pseudo” et “avatar” du vendeur dans le document Tissu.</p>
+              <div class="gain"><span aria-hidden="true">🔗</span> <span><strong>Gain :</strong> Permet d'afficher la grille des tissus sans effectuer de requêtes supplémentaires vers la collection Users.</span></div>
+            </div>
+
+            <div class="strategy-card">
+              <h4>Dernier message dans Conversation</h4>
+              <p>Copie du contenu du dernier message à la racine de la conversation.</p>
+              <div class="gain"><span aria-hidden="true">🔗</span> <span><strong>Gain :</strong> Permet d'afficher la liste des conversations sans lire la sous-collection messages.</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="h3"><span aria-hidden="true">🧰</span> 4. Règles d'Indexation</h3>
+
+          <div class="indexes">
+            <div class="bar">
+              <div class="dot2" aria-hidden="true"></div>
+              <span>firestore.indexes.json</span>
+            </div>
+            <div class="content">
+              <div class="index-item">
+                <div class="ensure">db.fabrics.ensureIndex(</div>
+                <span class="field">{ "material_type": 1 },</span>
+                <span class="field">{ "price": 1 }</span>
+                <div class="ensure">)</div>
+              </div>
+
+              <div class="index-item">
+                <div class="ensure">db.fabrics.ensureIndex(</div>
+                <span class="field">{ "is_sold": 1 },</span>
+                <span class="field">{ "created_at": -1 }</span>
+                <div class="ensure">)</div>
+                <div class="note">// Feed nouveautés</div>
+              </div>
+
+              <div class="index-item">
+                <div class="ensure">db.orders.ensureIndex(</div>
+                <span class="field">{ "couturier_id": 1 },</span>
+                <span class="field">{ "status": 1 },</span>
+                <span class="field">{ "created_at": 1 }</span>
+                <div class="ensure">)</div>
+                <div class="note">// Dashboard couturier</div>
+              </div>
+
+              <div class="cursor">_</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer badge (neutral deliverable wording) -->
+      <section class="ready">
+        <div class="badge"><span aria-hidden="true">✅</span> Prêt pour implémentation</div>
+      </section>
+
+    </main>
+
+    <footer>
+      &copy; 2026 SlowMode Project - CONFIDENTIAL
+    </footer>
+  </div>
+</body>
+</html>
